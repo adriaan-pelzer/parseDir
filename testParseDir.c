@@ -17,11 +17,15 @@ int main ( int argc, char **argv ) {
     dirname = argv[1];
 
     while ( ( oldest = open_lock_oldest_unlocked_file ( dirname ) ) ) {
-        char content[1024];
+        char *content = NULL;
 
-        memset ( content, 0, 1024 );
-        fread ( content, 1024, 1, oldest->fp );
+        if ( ( content = get_file_content ( oldest ) ) == NULL ) {
+            fprintf ( stderr, "Cannot get file content: %s\n", strerror ( errno ) );
+            goto over;
+        }
+
         printf ( "%s: %s", oldest->fn, content );
+        free ( content );
 
         if ( close_unlock_file ( oldest ) != EXIT_SUCCESS ) {
             fprintf ( stderr, "Cannot close and unlock file: %s\n", strerror ( errno ) );
@@ -35,9 +39,13 @@ int main ( int argc, char **argv ) {
             goto over;
         }
 
-        memset ( content, 0, 1024 );
-        fread ( content, 1024, 1, oldest->fp );
+        if ( ( content = get_file_content ( oldest ) ) == NULL ) {
+            fprintf ( stderr, "Cannot get file content: %s\n", strerror ( errno ) );
+            goto over;
+        }
+
         printf ( "%s: %s", oldest->fn, content );
+        free ( content );
 
         if ( close_unlink_file ( oldest ) != EXIT_SUCCESS ) {
             fprintf ( stderr, "Cannot close and unlink file: %s\n", strerror ( errno ) );

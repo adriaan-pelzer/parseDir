@@ -151,9 +151,13 @@ char *get_file_content ( fileCtx_t *fileCtx ) {
     while ( ! feof ( fileCtx->fp ) ) {
         if ( ( _rc = realloc ( _rc, bytes_read + 1024 ) ) == NULL )
             goto over;
-        bytes_read = bytes_read + fread ( _rc + bytes_read, 1, 1024, fp );    
+        bytes_read = bytes_read + fread ( _rc + bytes_read, 1, 1024, fileCtx->fp );    
     }
 
+    if ( ( _rc = realloc ( _rc, bytes_read + 1 ) ) == NULL )
+        goto over;
+
+    _rc[bytes_read] = '\0';
     rc = _rc;
 over:
     if ( rc != _rc && _rc != NULL )
