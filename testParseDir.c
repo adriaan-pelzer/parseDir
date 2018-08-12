@@ -6,7 +6,7 @@
 int main ( int argc, char **argv ) {
     int rc = EXIT_FAILURE;
     char *dirname = NULL;
-    FILE *oldest = NULL;
+    fileCtx_t *oldest = NULL;
 
     if ( argc < 2 ) {
         fprintf ( stderr, "Usage: %s folder\n", argv[0] );
@@ -19,8 +19,25 @@ int main ( int argc, char **argv ) {
     while ( ( oldest = open_lock_oldest_unlocked_file ( dirname ) ) ) {
         char content[1024];
 
-        fread ( content, 1024, 1, oldest );
-        printf ( "%s", content );
+        memset ( content, 0, 1024 );
+        fread ( content, 1024, 1, oldest->fp );
+        printf ( "%s: %s", oldest->fn, content );
+
+        if ( close_unlock_file ( oldest ) != EXIT_SUCCESS ) {
+            fprintf ( stderr, "Cannot close and unlock file: %s\n", strerror ( errno ) );
+            goto over;
+        }
+
+        oldest = NULL;
+
+        if ( ( oldest = open_lock_oldest_unlocked_file ( dirname ) ) == NULL ) {
+            fprintf ( stderr, "Cannot re-open oldest file: %s\n", strerror ( errno ) );
+            goto over;
+        }
+
+        memset ( content, 0, 1024 );
+        fread ( content, 1024, 1, oldest->fp );
+        printf ( "%s: %s", oldest->fn, content );
 
         if ( close_unlink_file ( oldest ) != EXIT_SUCCESS ) {
             fprintf ( stderr, "Cannot close and unlink file: %s\n", strerror ( errno ) );
